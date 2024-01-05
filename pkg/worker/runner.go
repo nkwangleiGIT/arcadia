@@ -140,10 +140,13 @@ func (runner *RunnerFastchatVLLM) Build(ctx context.Context, model *arcadiav1alp
 	// Get the real GPU requirement from env if configured
 	// this will be the total GPU from ray resource pool, not the resource requests/limits
 	gpuCount, _ := strconv.Atoi(runner.NumberOfGPUs())
+	rayClusterIndex := 0
 	for _, envItem := range runner.w.Spec.AdditionalEnvs {
 		if envItem.Name == "NUMBER_GPUS" {
 			gpuCount, _ = strconv.Atoi(envItem.Value)
-			break
+		}
+		if envItem.Name == "RAY_CLUSTER_INDEX" {
+			rayClusterIndex, _ = strconv.Atoi(envItem.Value)
 		}
 	}
 
@@ -155,8 +158,8 @@ func (runner *RunnerFastchatVLLM) Build(ctx context.Context, model *arcadiav1alp
 		} else {
 			// Use the 1st ray cluster for now
 			// TODO: let user to select with ray cluster to use
-			rayClusterAddress = rayClusters[0].HeadAddress
-			pythonVersion = rayClusters[0].PythonVersion
+			rayClusterAddress = rayClusters[rayClusterIndex].HeadAddress
+			pythonVersion = rayClusters[rayClusterIndex].PythonVersion
 			klog.Infof("run worker using ray: %s, number of GPU: %s", rayClusterAddress, runner.NumberOfGPUs())
 		}
 	} else {

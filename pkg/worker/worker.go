@@ -443,11 +443,11 @@ func (podWorker *PodWorker) Start(ctx context.Context) error {
 	}
 
 	// Configure node affinity
-	if podWorker.w.Spec.NodeSelectorRequirement != nil {
+	if podWorker.w.Spec.MatchExpressions != nil {
 		if podSpecTemplate.Spec.Affinity != nil {
 			// Append to the current node selector
 			podSpecTemplate.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions =
-				append(podSpecTemplate.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions, *podWorker.w.Spec.NodeSelectorRequirement)
+				append(podSpecTemplate.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions, podWorker.w.Spec.MatchExpressions...)
 		} else {
 			// Create a new one
 			podSpecTemplate.Spec.Affinity = &corev1.Affinity{
@@ -455,9 +455,7 @@ func (podWorker *PodWorker) Start(ctx context.Context) error {
 					RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
 						NodeSelectorTerms: []corev1.NodeSelectorTerm{
 							{
-								MatchExpressions: []corev1.NodeSelectorRequirement{
-									*podWorker.w.Spec.NodeSelectorRequirement,
-								},
+								MatchExpressions: podWorker.w.Spec.MatchExpressions,
 							},
 						},
 					},
