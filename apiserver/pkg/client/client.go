@@ -20,9 +20,16 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/flowcontrol"
+	"k8s.io/utils/env"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kubeagi/arcadia/apiserver/pkg/oidc"
+)
+
+const (
+	K8S_REST_CONFIG_QPS   = 50
+	K8S_REST_CONFIG_BURST = 60
 )
 
 func GetClient(idtoken *string) (dynamic.Interface, error) {
@@ -38,5 +45,14 @@ func GetClient(idtoken *string) (dynamic.Interface, error) {
 	if err != nil {
 		return nil, err
 	}
+	// RateLimiter: default qps is 5，default burst is 10, so increase them
+	qps, _ := env.GetInt("K8S_REST_CONFIG_QPS", 50)
+	burst, _ := env.GetInt("K8S_REST_CONFIG_BURST", 60)
+	// both should be configured if need to customize
+	if qps > 0 && burst > 0 {
+		cfg.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(float32(qps), burst)
+	}
+
+	cfg.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(50, 60)
 	return dynamic.NewForConfig(cfg)
 }
